@@ -1,0 +1,527 @@
+<html>
+<head>
+	<title>Game Caro</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<style>
+	html, body, .full-height {
+		height: 100%;
+	}
+	#well1 {
+		height: 15%; /*fall back for IE8, Safari 5.1, Opera Mini and pre-4.4 Android browsers*/
+		height: calc(15% - 20px);
+		overflow: hidden; /*better to decide how you want to handle this than to let the browser decide*/
+	}
+	#well2 {
+		height: 85%;
+		margin-bottom: 0;
+		overflow: auto;
+	}
+
+	.cell {
+		width:30px;
+		height:30px;
+		text-align:center;
+	}
+	#msg {
+		color:red;
+		font-size:24pt;
+	}
+	#state {
+		width:500px;
+		height:100px;
+		color:green;
+		overflow:auto;
+		border:black solid 1px;
+	}
+</style>
+
+<!-- jQuery library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+<body>
+
+	<nav class="navbar navbar-default">
+		<div class="container-fluid">
+			<!-- Brand and toggle get grouped for better mobile display -->
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#">Blogs</a>
+			</div>
+
+			<!-- Collect the nav links, forms, and other content for toggling -->
+			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+				<ul class="nav navbar-nav">
+					<li class="active"><a href="#"><span class="glyphicon glyphicon-home" aria-hidden="true"></span>  Home<span class="sr-only">(current)</span></a></li>
+					<li><a href="#">Forum</a></li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Category <span class="caret"></span></a>
+						<ul class="dropdown-menu">
+							<li><a href="#">Game Vui</a></li>
+							<li><a href="#">Game Chien Thuat</a></li>
+							<li><a href="#">Game 18+</a></li>
+							<li role="separator" class="divider"></li>
+							<li><a href="#">Game Nhap Vai</a></li>
+						</ul>
+					</li>
+				</ul>
+				<form class="navbar-form navbar-left" role="search">
+					<div class="form-group">
+						<div class="input-group">
+							<input type="text" class="form-control" placeholder="Search for...">
+							<span class="input-group-btn">
+								<button class="btn btn-default" type="button">Go!</button>
+							</span>
+						</div><!-- /input-group -->
+					</div>
+				</form>
+
+				<form class="navbar-form navbar-right" role="search">
+					<div class="form-group">
+						<input type="text" class="form-control" placeholder="ID">
+					</div>
+					<div class="form-group">
+						<input type="text" class="form-control" placeholder="Password">
+					</div>
+					<button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span>  Login</button>
+
+					<button type="submit" class="btn btn-success"><span class="glyphicon glyphicon-off" aria-hidden="true"></span>  Sign Up</button>
+				</form>
+			</div><!-- /.navbar-collapse -->
+		</div><!-- /.container-fluid -->
+	</nav>
+	<div class="container">	
+		<div class="row">	
+			<div class="col-md-8">
+				<div class="panel panel-warning">
+					<div class="panel-heading">
+						<h3 class="panel-title">Game caro online</h3><br>
+						<div>
+							<input type=radio name=style value=1 onclick="changeStyle(this.value);">Style 1: &#9792; &#9794;
+							<input type=radio name=style value=2 onclick="changeStyle(this.value);">Style 2: x o
+							<input type=radio name=style value=3 onclick="changeStyle(this.value);" checked>Style 3: <img src="x.png"> <img src="o.png">
+
+
+							<div class="btn-group btn-group-lg" role="group">
+								<button type="button" class="btn btn-danger">Pause</button>
+								<button type="button" class="btn btn-info">Play</button>
+								<button type="button" class="btn btn-warning">Remuse</button>
+							</div>
+						</div>
+
+					</div>
+
+					<div class="panel-body">
+
+
+						<script>
+
+							function initArray() {
+								var i, j;
+								var c = new Array();
+								for (i = 0; i < SIZE[0]; i++) {
+									c[i] = new Array();
+									for (j = 0; j < SIZE[1]; j++)
+										c[i][j] = 0;
+								}
+								return c;
+							}
+
+							function loadCell() {
+								var c = new Array();
+								for (i = 0; i < SIZE[0]; i++) {
+									c[i] = new Array();
+								}
+								var i, cells = document.getElementsByTagName("td");
+								for (i = 0; i < cells.length; i++) {
+									var cell = cells[i];
+									var _pos, _r, _c;
+									var r = getAttributes(cell);
+									_pos = new String(r["cell"]);
+									_r = eval(_pos.split(",")[0]);
+									_c = eval(_pos.split(",")[1]);
+									c[_r][_c] = cell;
+								}
+
+								return c;
+							}
+
+var SIZE = [15, 20]; // so o chieu ngang, chieu doc
+var CELL = initArray(); // mang luu diem
+var TABLE;
+var X = true; // luot danh
+var END = false;
+var HCOLOR = 'pink';
+var VIEW_LOG = false;
+
+var signal = new Array();
+signal[X] = "<img src='x.png'>";
+signal[!X] = "<img src='o.png'>";
+//signal[X] = "&#9792;";
+//signal[!X] = "&#9794;";
+
+var POINT = new Array();
+POINT[X] = 1;
+POINT[!X] = 2;
+
+var PERSON = new Array();
+PERSON[X] = "X";
+PERSON[!X] = "Y";
+
+function changeStyle(v) {
+	var X = true;
+	v = eval(v);
+	switch (v) {
+		case 1:
+		signal[X] = "&#9792;";
+		signal[!X] = "&#9794;";
+		break;
+		case 2:
+		signal[X] = "x";
+		signal[!X] = "o";
+		break;
+		case 3:
+		signal[X] = '<img src="x.png">';
+		signal[!X] = '<img src="o.png">';
+		break;
+		default:
+		break;
+	}
+	repaint();
+}
+
+function repaint() {
+	var i, j;
+	var c, r, p;
+	for (i = 0; i < SIZE[0]; i++) {
+		for (j = 0; j < SIZE[1]; j++) {
+			c = TABLE[i][j];
+			//alert(i+"-"+j);
+			r = getAttributes(c);
+			p = eval(r["point"]);
+			if (p == POINT[X]) {
+				c.innerHTML = signal[X];
+			} else if (p == POINT[!X]) {
+				c.innerHTML = signal[!X];
+			}
+		}
+	}
+}
+
+// ve ban co
+function drawBoard() {
+	var i, j;
+	sBoard = "<table class='table table-bordered'>";
+	for (i = 0; i < SIZE[0]; i++) {
+		sBoard += "<tr>";
+		for (j = 0; j < SIZE[1]; j++) {
+			sBoard += "<td class=cell cell='" + i + "," + j + "' point=0>&nbsp;</td>";
+		}
+		sBoard += "</tr>";
+	}
+	sBoard += "</table>";
+	document.write(sBoard);
+	TABLE = loadCell();
+}
+
+// gan su kien click va xu ly
+function addCellEvent() {
+	var cells = document.getElementsByTagName("td");
+	var i;
+	var kt=0;
+	for (i = 0; i < cells.length; i++) {
+		cells[i].onclick = function() {
+			if (END) {
+				warn("Xong rồi; con gà!");
+				return;
+			}
+			var r;
+			r = getAttributes(this);
+			//roalert(r["point"]);
+			if (r["point"] != 0) { // o da duoc danh dau
+				warn("He he, nhanh lên con gà");
+				return;
+			}
+			X = !X;
+			setPoint(this, POINT[X]);
+			this.innerHTML = signal[X];
+			//alert(i);
+			warn(PERSON[X] + " Nhanh lên con gà !, " + PERSON[!X] + " đang tính lắm mồm!");
+			var _pos, _r, _c;
+			_pos = new String(r["cell"]);
+			_r = eval(_pos.split(",")[0]);
+			_c = eval(_pos.split(",")[1]);
+			CELL[_r][_c] = POINT[X];
+			log(_r + "," + _c + " = " + CELL[_r][_c]);
+			//kt++;
+			ajax('test.php?x='+_r+'&y='+_c,'hienthi');
+			var w = checkWin(_r, _c);
+			if (w) warn(PERSON[X] + " Thắng rồi nhé con gà . <a href='javascript:location.href=location.href'> AAA</a>");
+		}}
+
+	}
+
+
+// kiem tra sau khi danh o r,c da co ai thang chua
+function checkWin(r, c) {
+	var i, j;
+	var t, v = CELL[r][c], nv, pv;
+	var rhead, rtail;
+	var chead, ctail;
+	// cung hang
+	t = 1;
+	chead = c;
+	rhead = r;
+	rtail = r;
+	ctail = c;
+	for (j = c + 1; j < SIZE[1]; j++) {
+		nv = CELL[r][j];
+		if (nv == v) {
+			t += 1;
+			ctail = j;
+		}
+		else
+			break;
+	}
+	for (j = c - 1; j >= 0; j--) {
+		pv = CELL[r][j];
+		if (pv == v) {
+			t += 1;
+			chead = j;
+		}
+		else
+			break;
+	}
+	
+	if (t >= 5) {
+		// highlight
+		for (j = chead; j <= ctail; j++) {
+			TABLE[r][j].style.backgroundColor = HCOLOR;
+		}
+		END = true;
+		return true;
+	}
+	// cung cot
+	t = 1;
+	chead = c;
+	rhead = r;
+	rtail = r;
+	ctail = c;
+	for (i = r + 1; i < SIZE[0]; i++) {
+		nv = CELL[i][c];
+		if (nv == v) {
+			t += 1;
+			rtail = i;
+		}
+		else
+			break;
+	}
+	for (i = r - 1; i >= 0; i--) {
+		pv = CELL[i][c];
+		if (pv == v) {
+			t += 1;
+			rhead = i;
+		}
+		else
+			break;
+	}
+	if (t >= 5) {
+		// highlight
+		for (i = rhead; i <= rtail; i++) {
+			TABLE[i][c].style.backgroundColor = HCOLOR;
+		}
+		END = true;
+		return true;
+	}
+	// cheo /
+	chead = c;
+	ctail = c;
+	rhead = r;
+	rtail = r;
+	t = 1;
+	i = r - 1;
+	for (j = c + 1; j < SIZE[1]; j++) {
+		if (i < 0) break;
+		pv = CELL[i--][j];
+		if (pv == v) {
+			t += 1;
+			ctail = j;
+			rtail = i+1;
+		}
+		else
+			break;
+	}
+	i = r + 1;
+	for (j = c - 1; j >= 0; j--) {
+		if (i >= SIZE[0]) break;
+		pv = CELL[i++][j];
+		if (pv == v) {
+			t += 1;
+			chead = j;
+			rhead = i-1;
+		}
+		else
+			break;
+	}
+	if (t >= 5) {
+		END = true;
+		for (j = chead; j <= ctail; j++) {
+			TABLE[rhead--][j].style.backgroundColor = HCOLOR;
+		}
+		return true;
+	}
+	// cheo \
+	chead = c;
+	ctail = c;
+	rhead = r;
+	rtail = r;
+	t = 1;
+	i = r + 1;
+	for (j = c + 1; j < SIZE[1]; j++) {
+		if (i >= SIZE[0]) break;
+		pv = CELL[i++][j];
+		if (pv == v) {
+			t += 1;
+			ctail = j;
+			rtail = i-1;
+		}
+		else
+			break;
+	}
+	i = r - 1;
+	for (j = c - 1; j >= 0; j--) {
+		if (i < 0) break;
+		pv = CELL[i--][j];
+		if (pv == v) {
+			t += 1;
+			chead = j;
+			rhead = i+1;
+		}
+		else
+			break;
+	}
+	if (t >= 5) {
+		END = true;
+		for (j = chead; j <= ctail; j++) {
+			TABLE[rhead++][j].style.backgroundColor = HCOLOR;
+		}
+		return true;
+	}	
+}
+
+// thay doi diem cho o (khi duoc danh dau)
+function setPoint(cell, value) {
+	cell.attributes.getNamedItem("point").value = value;
+}
+
+// lay toan bo cac attribute cua o, tra ve mang dang dictionary
+function getAttributes(cell) {
+	var r = new Array();
+	var as = cell.attributes;
+	for (i = 0; i < as.length; i++) {
+		r[as[i].name] = as[i].value;
+	}
+	return r;
+}
+
+// luu cac buoc danh dau
+function log(s) {
+	var c;
+	c = document.getElementById("state").innerHTML;
+	c = (c == "") ? (c) : (c + "<br>");
+	document.getElementById("state").innerHTML = c + s;
+}
+
+// thong bao tuong ung sau su kien click
+function warn(s) {
+	document.getElementById("msg").innerHTML = s;
+}
+
+// call above written function, enjoy now
+drawBoard();
+addCellEvent();
+</script>
+<div id="msg"  class="alert alert-danger" role="alert">Sẵn sàng!</div>
+<div id="state"></div>
+<script>
+	if (!VIEW_LOG) {
+		document.getElementById("state").style.display = 'none';
+	}
+</script>
+
+
+</div>
+</div>
+</div>
+
+<div class="col-md-4">
+	<div class="container full-height">
+		<div class="row full-height">
+			<div class="col-md-4 full-height">  
+				
+				<div class="well" id="well2">
+					<div class="list-group"> 
+						<a href="#" class="list-group-item">
+							<h4 class="list-group-item-heading">Hoai Bao</h4>
+							<div class="row">
+								<div class="col-md-3">
+									<img src="game-pikachu-co-dien.jpg" width="70px" height="70px">
+								</div>
+								<div class="col-md-9">
+									<p class="list-group-item-text">Donec id elit non mi porta gravida at eget metus. Maecenas sed diam eget risus varius blandit.</p>
+								</div>
+							</div>	
+						</a>
+						<a href="#" class="list-group-item">
+							<h4 class="list-group-item-heading">Hoai Bao</h4>
+							<div class="row">
+								<div class="col-md-3">
+									<img src="game-pikachu-co-dien.jpg" width="70px" height="70px">
+								</div>
+								<div class="col-md-9">
+									<p class="list-group-item-text">Donec id elit non mi porta gravida at eget metus. Maecenas sed diam eget risus varius blandit.</p>
+								</div>
+							</div>	
+						</a>
+					</div>
+				</div>
+
+				<div class="">
+					<form class="form-vertical">
+						<div class="form-group">
+							<label class="col-sm-2 control-label" style="margin-right:10px;">Comment</label>
+							<div class="col-sm-10">
+								<textarea class="form-control" rows="3" placeholder="Comment here..."></textarea>
+							</div>
+						</div>
+						<div class="form-group">
+							<div class="col-sm-offset-2 col-sm-10">
+								<button type="submit" class="btn btn-info" style="margin-left:-60px;"><span class="glyphicon glyphicon-envelope" aria-hidden="true"></span>  Submit</button>
+							</div>
+						</div>
+					</form>
+				</div>          
+
+			</div>
+		</div>
+	</div>
+
+
+
+
+
+</div>
+
+
+</div>
+</div>
+</body>
+</html>
