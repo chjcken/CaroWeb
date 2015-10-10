@@ -39,8 +39,8 @@
 </style>
 
 <!-- jQuery library -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="libs/bootstrap/jquery.min.js"></script>
+<script src="libs/bootstrap/bootstrap.min.js"></script>
 
 <body>
 
@@ -63,13 +63,11 @@
 					<li class="active"><a href="#"><span class="glyphicon glyphicon-home" aria-hidden="true"></span>  Home<span class="sr-only">(current)</span></a></li>
 					<li><a href="#">Forum</a></li>
 					<li class="dropdown">
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Category <span class="caret"></span></a>
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Play mode <span class="caret"></span></a>
 						<ul class="dropdown-menu">
-							<li><a href="#">Game Vui</a></li>
-							<li><a href="#">Game Chien Thuat</a></li>
-							<li><a href="#">Game 18+</a></li>
+							<li><a onclick="setPlayWithCom(true);"><span class="glyphicon glyphicon-pushpin" id="playcom" aria-hidden="true"></span>   Play with Computer</a></li>
 							<li role="separator" class="divider"></li>
-							<li><a href="#">Game Nhap Vai</a></li>
+							<li><a onclick="setPlayWithCom(false);"><span id="playother" class="" aria-hidden="true"></span>  Play with other</a></li>
 						</ul>
 					</li>
 				</ul>
@@ -82,9 +80,9 @@
 					<div class="form-group">
 						<input type="password" class="form-control" placeholder="Password">
 					</div>
-					<button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-log-in" aria-hidden="true"></span>  Login</button>
+					<button class="btn btn-default"><span class="glyphicon glyphicon-log-in" aria-hidden="true"></span>  Login</button>
 
-					<button type="submit" class="btn btn-link"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>  Sign Up</button>
+					<button class="btn btn-link"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>  Sign Up</button>
 				</form>
 			</div><!-- /.navbar-collapse -->
 		</div><!-- /.container-fluid -->
@@ -97,9 +95,8 @@
 						<div>
 
 							<div class="btn-group btn-group-lg" role="group">
-								<button type="button" class="btn btn-danger">Pause</button>
-								<button type="button" class="btn btn-info" onclick="resetGame();">New Game</button>
-								<button type="button" class="btn btn-warning">Resume</button>
+								<button type="button" class="btn btn-info" onclick="resetGame();">New Game</button>								
+								<button id="find" type="button"  style="display: none;"class="btn btn-danger" onclick="findOpponent();">Find other</button>
 							</div>
 						</div>
 
@@ -109,6 +106,100 @@
 
 
 						<script>
+
+							var webSocket;
+							var isWebSocketSupported = window.WebSocket;
+
+							function setPlayWithCom(val){
+								playWithCom = val;
+								if (playWithCom){
+									$("#find").hide();
+									$("#stopfind").hide();
+
+									$("#playcom").addClass("glyphicon glyphicon-pushpin");
+									$("#playother").removeClass();
+
+									webSocket.close();
+									resetGame();
+								}
+								else{
+									if (!isWebSocketSupported){
+										alert("Your browser does not support web socket!");
+										return;
+									}
+
+									$("#find").show();
+									$("#stopfind").show();
+
+									$("#playother").addClass("glyphicon glyphicon-pushpin");
+									$("#playcom").removeClass();
+									resetGame();
+								}
+							}
+
+							var FIND_OPPONENT = "FIND";
+							var STOP_FINDING_OPPONENT = "STOPFINDING";
+							var OPPONENT_FOUND_YOU_GO_FIRST = "YOUGOFIRST";
+							var OPPONENT_FOUND_YOU_GO_SECOND = "YOUGOSECOND";
+							var PLAY_MOVE = "MOVE_";
+							var SURRENDER = "surrender";
+							var ERROR = "ERROR!";
+							var CHAT = "CHAT_";
+
+							
+
+
+
+							var SIZE = [15, 15]; // so o chieu ngang, chieu doc
+							var CELL = initArray(); // mang luu diem
+							var TABLE;
+							var X = true; // luot danh
+							var END = false;
+							var HCOLOR = 'pink';
+							var VIEW_LOG = false;
+
+							var signal = new Array();
+							signal[X] = "<img src='img/x.png'>";
+							signal[!X] = "<img src='img/o.png'>";
+
+							var POINT = new Array();
+							POINT[X] = 1;
+							POINT[!X] = 2;
+
+							var PERSON = new Array();
+							PERSON[X] = "X";
+							PERSON[!X] = "Y";
+
+							userSq= 1;
+							machSq=-1;
+							blinkSq="b-1";
+							winningMove=9999999;
+							openFour   =8888888;
+							twoThrees  =7777777;
+
+							f=new Array();
+							s=new Array();
+							q=new Array();
+							for (i=0;i<SIZE[0];i++) {
+							 f[i]=new Array();
+							 s[i]=new Array();
+							 q[i]=new Array();
+							 for (j=0;j<SIZE[1];j++) {
+							  f[i][j]=0;
+							  s[i][j]=0;
+							  q[i][j]=0;
+							 }
+							}
+
+							iLastUserMove=0;
+							jLastUserMove=0;
+
+
+							myTurn=false;
+							
+
+							var playWithCom = true;
+
 
 							function initArray() {
 								var i, j;
@@ -140,53 +231,7 @@
 								return c;
 							}
 
-							var SIZE = [15, 15]; // so o chieu ngang, chieu doc
-							var CELL = initArray(); // mang luu diem
-							var TABLE;
-							var X = true; // luot danh
-							var END = false;
-							var HCOLOR = 'pink';
-							var VIEW_LOG = false;
 
-							var signal = new Array();
-							signal[X] = "<img src='x.png'>";
-							signal[!X] = "<img src='o.png'>";
-							//signal[XO] = "<img src 'xo.png'>";
-							//signal[X] = "&#9792;";
-							//signal[!X] = "&#9794;";
-
-							var POINT = new Array();
-							POINT[X] = 1;
-							POINT[!X] = 2;
-
-							var PERSON = new Array();
-							PERSON[X] = "X";
-							PERSON[!X] = "Y";
-
-							userSq= 1;
-							machSq=-1;
-							blinkSq="b-1";
-							myTurn=false;
-							winningMove=9999999;
-							openFour   =8888888;
-							twoThrees  =7777777;
-
-							f=new Array();
-							s=new Array();
-							q=new Array();
-							for (i=0;i<SIZE[0];i++) {
-							 f[i]=new Array();
-							 s[i]=new Array();
-							 q[i]=new Array();
-							 for (j=0;j<SIZE[1];j++) {
-							  f[i][j]=0;
-							  s[i][j]=0;
-							  q[i][j]=0;
-							 }
-							}
-
-							iLastUserMove=0;
-							jLastUserMove=0;
 
 							function changeStyle(v) {
 								var X = true;
@@ -228,6 +273,8 @@
 								}
 							}
 
+
+
 							function resetGame() {
 								for (i=0;i<SIZE[0];i++) {
 								  for (j=0;j<SIZE[1];j++) {
@@ -235,15 +282,22 @@
 									   var cell = document.getElementById("cell"+i+j);
 									   //if (cell != null)
 									   	cell.innerHTML = "";
-									   	// cell.style.width = "30px";
-									   	// cell.style.height = "30px";
-									   	// cell.style.textAlign = "center";
 								   }
 
 								   	f[i][j]=0;
 								  }
 								}
-								  myTurn = false;
+								myTurn = true;
+								if (!playWithCom){
+									if (isWebSocketSupported){
+										openSocket();
+										myTurn = false;
+									}
+									else {
+										alert("Your browser does not support web socket!");
+									}
+								}
+
 							}
 
 							// ve ban co
@@ -263,9 +317,9 @@
 							}
 
 							function cellClick(i, j){
-								
-								if(myTurn || f[i][j]!=0) return;
-								//if (f[i][j]!=0) {alert('This square is not empty! Please choose another.'); return; }
+								console.log(myTurn);
+								if(!myTurn || f[i][j]!=0) return;
+
 								drawMovedCell(i, j, userSq);
 
 								
@@ -274,10 +328,19 @@
 								jLastUserMove=j;
 
 								f[i][j] = userSq;
-								 dly=(document.images)?10:SIZE[0]*30;
+								dly=(document.images)?10:SIZE[0]*30;
 
-								if (winningPos(i,j,userSq)==winningMove) setTimeout("alert('You won!');",dly);
-								else setTimeout("machineMove(iLastUserMove,jLastUserMove);",dly);
+								if (winningPos(i,j,userSq)==winningMove){
+									setTimeout("alert('You won!');",dly);
+									return;
+								}
+
+								if (playWithCom){
+									setTimeout("machineMove(iLastUserMove,jLastUserMove);",dly);
+								}
+								else {
+									webSocket.send(PLAY_MOVE + i + "_" + j);
+								}
 							}
 
 							function drawMovedCell(i, j, role){
@@ -382,7 +445,7 @@
 								  setTimeout("drawMovedCell(iMach,jMach,machSq);", 800);
 								 
 								 if (winningPos(iMach,jMach,machSq)==winningMove) setTimeout("alert('I won!')",900);
-								 else setTimeout("myTurn=false;",950);
+								 else setTimeout("myTurn=!myTurn;",950);
 								}
 
 								function hasNeighbors(i,j) {
@@ -557,6 +620,7 @@
 
 							// call above written function, enjoy now
 							drawBoard();
+
 						</script>
 
 
@@ -571,7 +635,7 @@
 			<div class="col-md-4 full-height">  
 				
 				<div class="well" id="well2">
-					<p id="chattext">Me: helooooo<br></p>
+					<p id="chattext"></p>
 				</div>
 
 				<div class="">
@@ -594,6 +658,115 @@
 
 	<script type="text/javascript">
 
+		
+				           
+				           
+        function openSocket(){
+            // Ensures only one connection is open at a time
+            if(webSocket !== undefined && webSocket.readyState !== WebSocket.CLOSED){
+               console.log("WebSocket is already opened.");
+               return;
+            }
+            // Create a new instance of the websocket
+            webSocket = new WebSocket("ws://localhost:8080/caro/");
+             
+            /**
+             * Binds functions to the listeners for the websocket.
+             */
+            webSocket.onopen = function(event){
+                // For reasons I can't determine, onopen gets called twice
+                // and the first time event.data is undefined.
+                // Leave a comment if you know the answer.
+                if(event.data === undefined)
+                    return;
+
+                console.log(event.data);
+            };
+
+            webSocket.onmessage = function(event){
+                 showMessage(event.data, "Server")
+
+                 if (event.data == OPPONENT_FOUND_YOU_GO_FIRST) {
+                 	myTurn = true;
+                 	alert("FOUND OPPONENT -- YOU GO FIRST!!");
+                 	return;
+                 }
+
+                 if (event.data == OPPONENT_FOUND_YOU_GO_SECOND) {
+                 	myTurn = false;
+                 	alert("FOUND OPPONENT -- YOU GO SECOND!!\nWait your opponent move");
+                 	return;
+                 }
+
+                 if (event.data == SURRENDER) {
+                 	myTurn = false;
+                 	alert("YOUR OPPONENT SURRENDER -- YOU WIN!!");
+                 	return;
+                 }
+
+                 if (event.data == ERROR) {
+                 	myTurn = false;
+                 	alert("AN ERROR HAS OCCURED -- !!");
+                 	return;
+                 }
+
+                 if (event.data.indexOf(PLAY_MOVE) == 0) {
+                 	myTurn = true;
+                 	
+                 	var arrMove = event.data.split("_");
+                 	var i = parseInt(arrMove[1]);
+                 	var j = parseInt(arrMove[2]);
+
+                 	f[i][j] = machSq;
+                 	drawMovedCell(i, j, machSq);
+
+                 	dly=(document.images)?10:SIZE[0]*30;
+
+					if (winningPos(i,j,userSq)==winningMove){
+						myTurn = false;
+						setTimeout("alert('You loose!');",dly);
+					}
+
+                 	return;
+                 }
+
+                 if (event.data.indexOf(CHAT) == 0) {
+                 	var arrMsg = event.data.split("_");
+                 	showMessage(arrMsg[1], "Opponent");
+                 	return;
+                 }
+
+            };
+
+            webSocket.onclose = function(event){
+                 console.log("Connection closed");
+            };
+        }
+
+
+        function findOpponent(){
+        	if(playWithCom){
+        		return;
+        	}
+
+        	var isWebSocketAvailable = (webSocket !== undefined && webSocket.readyState !== WebSocket.CLOSED);
+
+        	
+        	if ($("#find").text() == "Find other"){
+        		$("#find").text("Stop find");
+        		if (isWebSocketAvailable)
+	        		webSocket.send(FIND_OPPONENT);
+        	}
+        	else{
+        		$("#find").text("Find other");
+        		if (isWebSocketAvailable)
+        			webSocket.send(STOP_FINDING_OPPONENT);
+        	}
+        }
+
+
+
+
 		function keyEnterPressed(event){
 			if (event.keyCode == 13){
 				send();	
@@ -603,8 +776,12 @@
 		}
 
 		function send(){
-			if ($("#message").val().trim() != ""){
-				showMessage($("#message").val(), "Me");		
+			var msg = $("#message").val();
+			if (msg.trim() != ""){
+				showMessage(msg, "Me");
+				if (webSocket !== undefined && webSocket.readyState !== WebSocket.CLOSED){
+					webSocket.send(CHAT + msg);
+				}
 				$("#message").val("");
 			}
 		}
@@ -612,6 +789,8 @@
 		function showMessage(message, name){
 			document.getElementById("chattext").innerHTML += (name + ": " + message + "<br>");
 		}
+
+
 
 
 	</script>
